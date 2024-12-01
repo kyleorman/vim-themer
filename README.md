@@ -8,8 +8,7 @@ A Vim plugin for seamless colorscheme management with FZF integration and pywal 
 - 🔄 Pywal integration for system-wide color consistency
 - 💾 Theme persistence across sessions
 - ⚡ Quick theme switching with customizable keybindings
-- 🌓 Automatic dark/light mode detection
-- 🔄 Background toggle for light/dark modes with traditional themes
+- 🌓 Background toggle for light/dark modes with traditional themes
 - 🎯 Support for multiple colorscheme directories
 
 ## Installation
@@ -60,7 +59,7 @@ themer.vim provides the following commands:
 | `:ThemeSelect` | Open FZF theme selector | `<leader>tt` |
 | `:PywalTheme` | Apply pywal colorscheme | `<leader>tp` |
 | `:SaveTheme` | Save current theme as default | `<leader>ts` |
-| ':ToggleBackground' | Toggle light/dark background modes | '<leader>tb' |
+| `:ToggleBackground` | Toggle light/dark background modes | `<leader>tb` |
 
 ## Usage
 

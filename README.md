@@ -1,6 +1,12 @@
-/************************/
-/* ｔｈｅｍｅｒ．ｖｉｍ */
-/************************/
+/**********************************************************/
+/*  _   _                                    _            */
+/* | |_| |__   ___ _ __ ___   ___ _ ____   _(_)_ __ ___   */
+/* | __| '_ \ / _ \ '_ ` _ \ / _ \ '__\ \ / / | '_ ` _ \  */
+/* | |_| | | |  __/ | | | | |  __/ | _ \ V /| | | | | | | */
+/*  \__|_| |_|\___|_| |_| |_|\___|_|(_) \_/ |_|_| |_| |_| */
+/*                                                        */
+/**********************************************************/
+
 
 A Vim plugin for seamless colorscheme management with FZF integration and pywal support. themer.vim provides an intuitive interface for selecting, applying, and managing colorschemes, including support for pywal-generated themes.
 

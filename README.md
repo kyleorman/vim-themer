@@ -9,6 +9,7 @@ A Vim plugin for seamless colorscheme management with FZF integration and pywal 
 - 💾 Theme persistence across sessions
 - ⚡ Quick theme switching with customizable keybindings
 - 🌓 Automatic dark/light mode detection
+- 🔄 Background toggle for light/dark modes with traditional themes
 - 🎯 Support for multiple colorscheme directories
 
 ## Installation
@@ -43,9 +44,11 @@ let g:vim_themer_silent = 0                           " Options: 0 (verbose), 1 
 let g:vim_themer_disable_keybindings = 0
 
 " Optional: Customize keybindings
-let g:vim_themer_keymap_theme_select = '<leader>tt'   " Themer Theme - Fuzzy find themes
-let g:vim_themer_keymap_pywal = '<leader>tp'         " Themer Pywal - Loads the current pywal color scheme
-let g:vim_themer_keymap_save_theme = '<leader>ts'    " Themer Save - Saves currently applied theme
+let g:vim_themer_keymap_theme_select = '<leader>tt'   " Fuzzy find themes
+let g:vim_themer_keymap_pywal = '<leader>tp'         " Load pywal theme
+let g:vim_themer_keymap_save_theme = '<leader>ts'    " Save current theme
+let g:vim_themer_keymap_toggle_background = '<leader>tb' " Toggle light/dark background
+
 ```
 
 ## Commands
@@ -57,6 +60,7 @@ themer.vim provides the following commands:
 | `:ThemeSelect` | Open FZF theme selector | `<leader>tt` |
 | `:PywalTheme` | Apply pywal colorscheme | `<leader>tp` |
 | `:SaveTheme` | Save current theme as default | `<leader>ts` |
+| ':ToggleBackground' | Toggle light/dark background modes | '<leader>tb' |
 
 ## Usage
 
@@ -70,14 +74,17 @@ themer.vim provides the following commands:
 
 1. First, generate a color scheme using pywal: `wal -i /path/to/wallpaper`
 2. In Vim, press `<leader>tp` or run `:PywalTheme` to apply the pywal colors
-3. The pywal theme will be applied while maintaining Vim's syntax highlighting structure
-4. If the themer mode is set to 'pywal', Vim loads the current pywal generated theme and ignores the manually saved theme 
+3. If the mode is set to 'pywal', themer.vim will always load the current pywal theme
+
+### Background Toggle
+
+1. Toggle light and dark background modes for traditional themes using <leader>tb or :ToggleBackground.
+2. For pywal themes, the toggle function does nothing, retaining the current pywal-applied theme.
 
 ### Theme Persistence
-
-- After selecting a theme you like, save it as default with `<leader>ts` or `:SaveTheme`
-- The saved theme will be automatically applied in future Vim sessions
-- Works with both traditional colorschemes and pywal-generated themes
+- Save a theme as default with <leader>ts or :SaveTheme
+- For traditional themes, the saved theme will automatically load in future sessions
+- For pywal themes, a saved pywal configuration will load the saved colors, but live updates always use the current pywal state
 
 ## Advanced Configuration
 

@@ -64,9 +64,6 @@ function! themer#apply_pywal()
         return
     endtry
 
-    " Save a copy of the current pywal colors.json for future loading
-    call writefile(readfile(colors_json_path), expand('~/.vim_themer_pywal.json'))
-
     " Apply the colors to Vim
     call themer#apply_pywal_from_dict(colors_dict)
 
@@ -109,6 +106,7 @@ function! themer#apply_pywal_from_dict(colors_dict)
     let colors = a:colors_dict.colors
 
     try
+        " Apply colors across various highlight groups to fully utilize pywal colors
         execute 'highlight Comment guifg=' . colors.color8 . ' gui=italic'
         execute 'highlight Constant guifg=' . colors.color3
         execute 'highlight Identifier guifg=' . colors.color4
@@ -133,20 +131,25 @@ endfunction
 " Save the current theme as default (either pywal or selected theme)
 function! themer#save_theme()
     if exists('g:current_color_scheme')
-        " Save the current colorscheme (can be pywal or a named theme)
-        call writefile([g:current_color_scheme], expand('~/.vim_themer_default'))
-
         if g:current_color_scheme ==# "pywal"
-            " Pywal mode - Save the pywal json for future loading
-            if filereadable(expand('~/.vim_themer_pywal.json'))
-                if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
-                    echom "Pywal theme saved as default with colors from ~/.vim_themer_pywal.json"
-                endif
+            " Pywal mode in manual mode - Save a copy of the current pywal JSON file
+            let colors_json_path = expand('~/.cache/wal/colors.json')
+            if filereadable(colors_json_path)
+                try
+                    call writefile([g:current_color_scheme], expand('~/.vim_themer_default'))
+                    call writefile(readfile(colors_json_path), expand('~/.vim_themer_saved_pywal.json'))
+                    if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
+                        echom "Pywal theme saved as default with colors from ~/.vim_themer_saved_pywal.json"
+                    endif
+                catch
+                    echohl ErrorMsg | echom "Error saving pywal colors from ~/.cache/wal/colors.json." | echohl None
+                endtry
             else
-                echohl ErrorMsg | echom "Error: Pywal json not found to save." | echohl None
+                echohl ErrorMsg | echom "Pywal colors.json not found to save." | echohl None
             endif
         else
             " Traditional colorscheme mode - Save the colorscheme name
+            call writefile([g:current_color_scheme], expand('~/.vim_themer_default'))
             if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
                 echom "Traditional theme saved: " . g:current_color_scheme
             endif
@@ -158,16 +161,19 @@ endfunction
 
 " Apply saved theme on Vim startup
 function! themer#apply_saved_theme()
-    if filereadable(expand('~/.vim_themer_default'))
+    if g:vim_themer_mode ==# "pywal"
+        " Always load the latest pywal colors
+        call themer#apply_pywal()
+    elseif filereadable(expand('~/.vim_themer_default'))
         let saved_theme = trim(readfile(expand('~/.vim_themer_default'))[0])
         if saved_theme ==# "pywal"
-            " Apply pywal theme from the saved JSON
-            if filereadable(expand('~/.vim_themer_pywal.json'))
+            " Load from the saved pywal JSON file
+            if filereadable(expand('~/.vim_themer_saved_pywal.json'))
                 try
-                    let colors_dict = json_decode(join(readfile(expand('~/.vim_themer_pywal.json')), "\n"))
+                    let colors_dict = json_decode(join(readfile(expand('~/.vim_themer_saved_pywal.json')), "\n"))
                     call themer#apply_pywal_from_dict(colors_dict)
                     if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
-                        echom "Loaded saved pywal theme from ~/.vim_themer_pywal.json"
+                        echom "Loaded saved pywal theme from ~/.vim_themer_saved_pywal.json"
                     endif
                 catch
                     echohl ErrorMsg | echom "Error applying saved pywal theme." | echohl None

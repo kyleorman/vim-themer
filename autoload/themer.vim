@@ -11,8 +11,17 @@ function! themer#show_selector()
         if isdirectory(expanded_dir)
             " Recursively get all colorscheme files (*.vim) from the directory
             let files = globpath(expanded_dir, '**/*.vim', 0, 1)
-            let names = map(files, 'fnamemodify(v:val, ":t:r")')
-            call extend(colorschemes, names)
+
+            " Iterate through each file and check if it is a valid colorscheme
+            for file in files
+                let content = join(readfile(file), "\n")
+                
+                " Check if the file contains one of the typical colorscheme keywords
+                if content =~ '\vhighlight|hi\s|link\s|set\s+background='
+                    let name = fnamemodify(file, ":t:r")
+                    call add(colorschemes, name)
+                endif
+            endfor
         else
             echohl WarningMsg | echom "Warning: Directory not found - " . expanded_dir | echohl None
         endif
@@ -196,5 +205,28 @@ function! themer#apply_saved_theme()
         endif
     else
         echohl WarningMsg | echom "No saved theme found to apply." | echohl None
+    endif
+endfunction
+
+function! themer#toggle_background()
+    " Check if the current theme is pywal
+    if g:current_color_scheme ==# 'pywal'
+        " Do nothing for pywal themes when toggling background
+        if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
+            echom "Pywal theme detected, background toggle has no effect."
+        endif
+    else
+        " For traditional themes, toggle the background between light and dark
+        if &background == 'dark'
+            set background=light
+            if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
+                echom "Background set to light"
+            endif
+        else
+            set background=dark
+            if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
+                echom "Background set to dark"
+            endif
+        endif
     endif
 endfunction

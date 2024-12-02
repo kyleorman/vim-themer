@@ -1,0 +1,11 @@
+CREATE TABLE Example (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    value INTEGER NOT NULL
+);
+
+INSERT INTO Example (name, value) VALUES ('Row 1', 10), ('Row 2', 20);
+
+SELECT * FROM Example
+WHERE value > 15
+ORDER BY value DESC;

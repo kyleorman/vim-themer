@@ -1,0 +1,16 @@
+{
+    "example": {
+        "id": 1,
+        "name": "JSON Example",
+        "enabled": true,
+        "values": [10, 20, 30, 40],
+        "metadata": {
+            "created": "2024-01-01T12:00:00Z",
+            "updated": "2024-01-02T18:00:00Z"
+        },
+        "attributes": {
+            "color": "blue",
+            "shape": "circle"
+        }
+    }
+}

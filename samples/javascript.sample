@@ -1,0 +1,19 @@
+function greet(name) {
+    console.log(`Hello, ${name}!`);
+}
+
+class Example {
+    constructor(title, value) {
+        this.title = title;
+        this.value = value;
+    }
+
+    display() {
+        console.log(`${this.title}: ${this.value}`);
+    }
+}
+
+const example = new Example("JavaScript Example", 42);
+example.display();
+
+greet("World");

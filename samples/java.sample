@@ -1,0 +1,22 @@
+public class Example {
+    private String name;
+    private int value;
+
+    public Example(String name, int value) {
+        this.name = name;
+        this.value = value;
+    }
+
+    public void display() {
+        System.out.println(name + ": " + value);
+    }
+
+    public static void main(String[] args) {
+        Example example = new Example("Java Example", 42);
+        example.display();
+
+        for (int i = 0; i < 5; i++) {
+            System.out.println("Count: " + i);
+        }
+    }
+}

@@ -1,0 +1,27 @@
+fn greet(name: &str) {
+    println!("Hello, {}!", name);
+}
+
+struct Example {
+    name: String,
+    value: i32,
+}
+
+impl Example {
+    fn new(name: &str, value: i32) -> Self {
+        Self {
+            name: name.to_string(),
+            value,
+        }
+    }
+
+    fn display(&self) {
+        println!("{}: {}", self.name, self.value);
+    }
+}
+
+fn main() {
+    let example = Example::new("Rust Example", 42);
+    example.display();
+    greet("Rustacean");
+}

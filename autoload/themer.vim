@@ -1,6 +1,6 @@
 " themer: Core functionality for theme selection and pywal integration
 
-" Show the FZF selector for colorschemes
+" Show the FZF selector for colorschemes with preview
 function! themer#show_selector()
     let colorscheme_dirs = g:vim_themer_dirs
     let colorschemes = []
@@ -35,11 +35,50 @@ function! themer#show_selector()
         return
     endif
 
-    " Show the colorschemes in FZF and apply the selected one
+    " Path to the sample file for preview
+    let sample_file = expand('~/.vim/pack/plugins/start/vim-themer/samples/default.sample')
+
+    " Create a temporary vimrc for preview
+    let temp_vimrc = tempname()
+    call writefile([
+        \ 'set nocompatible',
+        \ 'set shortmess+=I',
+        \ 'set noswapfile',
+        \ 'let g:vim_themer_silent=1',
+        \ 'set runtimepath+=' . $VIMRUNTIME,
+        \ 'set runtimepath+=' . expand('~/.vim'),
+        \ 'let &runtimepath .= "," . ' . string(join(g:vim_themer_dirs, ',')),
+        \ 'syntax enable',
+        \ 'set termguicolors',
+        \ 'set background=dark',
+        \ 'let g:vim_themer_mode="manual"'
+        \ ], temp_vimrc)
+
+    " Create preview command
+    let preview_cmd = 'echo "--- Preview for {} ---" && '
+        \ . 'ex -u ' . shellescape(temp_vimrc) 
+        \ . ' -c "syntax on" '
+        \ . ' -c "colorscheme {}" '
+        \ . ' -c "set ft=python" '
+        \ . ' -c "e ' . sample_file . '" '
+        \ . ' -c "1,$ print" '
+        \ . ' -c "q!" '
+        \ . ' 2>/dev/null'
+
+    " Show the colorschemes in FZF with preview
     call fzf#run(fzf#wrap({
         \ 'source': colorschemes,
-        \ 'sink': function('themer#set_theme')
+        \ 'sink': function('themer#set_theme'),
+        \ 'options': [
+        \   '--preview',
+        \   preview_cmd,
+        \   '--preview-window',
+        \   'right:50%'
+        \ ]
     \ }))
+
+    " Clean up
+    call delete(temp_vimrc)
 endfunction
 
 " Apply the selected colorscheme

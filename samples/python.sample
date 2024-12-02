@@ -1,0 +1,19 @@
+import os
+import sys
+
+class Example:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def display(self):
+        print(f"{self.name}: {self.value}")
+
+def main():
+    example = Example("Python Example", 42)
+    example.display()
+    for i in range(5):
+        print(f"Count: {i}")
+
+if __name__ == "__main__":
+    main()

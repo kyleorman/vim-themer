@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# This is a Bash script example
+NAME="Bash Example"
+VALUE=42
+
+echo "Name: $NAME"
+echo "Value: $VALUE"
+
+for i in {1..5}; do
+    echo "Count: $i"
+done

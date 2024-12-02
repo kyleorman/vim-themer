@@ -1,0 +1,17 @@
+import math
+import random
+
+class MathExample:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def calculate(self):
+        return math.sqrt(self.value) * random.random()
+
+    def display(self):
+        print(f"{self.name}: {self.value}, Calculated: {self.calculate():.2f}")
+
+if __name__ == "__main__":
+    example = MathExample("Default Python Example", 42)
+    example.display()

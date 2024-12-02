@@ -1,48 +1,204 @@
-" themer: Core functionality for theme selection and pywal integration
+" autoload/themer.vim
 
-" Show the FZF selector for colorschemes
-function! themer#show_selector()
-    let colorscheme_dirs = g:vim_themer_dirs
-    let colorschemes = []
-
-    " Iterate through each directory and look for colorschemes
-    for dir in colorscheme_dirs
-        let expanded_dir = expand(dir)
-        if isdirectory(expanded_dir)
-            " Recursively get all colorscheme files (*.vim) from the directory
-            let files = globpath(expanded_dir, '**/*.vim', 0, 1)
-
-            " Iterate through each file and check if it is a valid colorscheme
-            for file in files
-                let content = join(readfile(file), "\n")
-                
-                " Check if the file contains one of the typical colorscheme keywords
-                if content =~ '\vhighlight|hi\s|link\s|set\s+background='
-                    let name = fnamemodify(file, ":t:r")
-                    call add(colorschemes, name)
-                endif
-            endfor
-        else
-            echohl WarningMsg | echom "Warning: Directory not found - " . expanded_dir | echohl None
-        endif
-    endfor
-
-    let colorschemes = uniq(sort(colorschemes))
-
-    " If no colorschemes are found, display a message and exit
-    if empty(colorschemes)
-        echohl ErrorMsg | echom "No colorschemes found." | echohl None
+function! themer#update_preview(theme_name) abort
+    if !exists('t:themer_preview_win') || empty(a:theme_name)
         return
     endif
 
-    " Show the colorschemes in FZF and apply the selected one
-    call fzf#run(fzf#wrap({
-        \ 'source': colorschemes,
-        \ 'sink': function('themer#set_theme')
-    \ }))
+    " Store current state
+    let l:cur_win = winnr()
+    let l:cur_theme = get(g:, 'colors_name', '')
+
+    " Switch to preview window and apply theme
+    noautocmd execute t:themer_preview_win . 'wincmd w'
+    try
+        execute 'colorscheme ' . a:theme_name
+        redraw!
+    catch
+    finally
+        " Return to original window and restore theme
+        noautocmd execute l:cur_win . 'wincmd w'
+        if !empty(l:cur_theme)
+            execute 'colorscheme ' . l:cur_theme
+        endif
+    endtry
 endfunction
 
-" Apply the selected colorscheme
+function! themer#create_preview_window()
+    " Save original window and theme
+    let l:orig_win = win_getid()
+    let t:themer_original_theme = get(g:, 'colors_name', '')
+
+    " Create right split
+    botright vnew
+    let t:themer_preview_win = winnr()
+    let t:themer_preview_buf = bufnr('%')
+
+    " Set up preview buffer
+    setlocal buftype=nofile
+    setlocal bufhidden=wipe
+    setlocal noswapfile
+    setlocal nonumber
+    setlocal norelativenumber
+    setlocal nocursorline
+    setlocal nocursorcolumn
+
+    " Extended sample code
+    call setline(1, [
+        \ '#!/usr/bin/env python',
+        \ '',
+        \ 'from typing import Dict, List, Optional, Union',
+        \ 'from dataclasses import dataclass',
+        \ 'from abc import ABC, abstractmethod',
+        \ '',
+        \ '@dataclass',
+        \ 'class ColorValue:',
+        \ '    """Represents a color value with validation."""',
+        \ '    hex_value: str',
+        \ '',
+        \ '    def __post_init__(self):',
+        \ '        if not self.hex_value.startswith("#"):',
+        \ '            raise ValueError("Color must start with #")',
+        \ '        if len(self.hex_value) != 7:',
+        \ '            raise ValueError("Invalid color length")',
+        \ '',
+        \ 'class ThemeComponent(ABC):',
+        \ '    """Base class for theme components."""',
+        \ '',
+        \ '    @abstractmethod',
+        \ '    def apply(self) -> bool:',
+        \ '        """Apply the theme component."""',
+        \ '        pass',
+        \ '',
+        \ 'class ColorScheme(ThemeComponent):',
+        \ '    """Manages a color scheme with primary and accent colors."""',
+        \ '',
+        \ '    def __init__(self, name: str):',
+        \ '        self.name = name',
+        \ '        self.colors: Dict[str, ColorValue] = {',
+        \ '            "primary": ColorValue("#FF0000"),',
+        \ '            "secondary": ColorValue("#00FF00"),',
+        \ '            "accent": ColorValue("#0000FF")',
+        \ '        }',
+        \ '        self._active = False',
+        \ '',
+        \ '    @property',
+        \ '    def is_active(self) -> bool:',
+        \ '        """Check if the color scheme is currently active."""',
+        \ '        return self._active',
+        \ '',
+        \ '    def add_color(self, name: str, value: str) -> None:',
+        \ '        """Add a new color to the scheme."""',
+        \ '        self.colors[name] = ColorValue(value)',
+        \ '',
+        \ '    def apply(self) -> bool:',
+        \ '        """Apply the color scheme."""',
+        \ '        try:',
+        \ '            for name, color in self.colors.items():',
+        \ '                print(f"Applying {name}: {color.hex_value}")',
+        \ '            self._active = True',
+        \ '            return True',
+        \ '        except Exception as e:',
+        \ '            print(f"Failed to apply theme: {e}")',
+        \ '            return False',
+        \ '',
+        \ 'def create_default_scheme() -> ColorScheme:',
+        \ '    """Create a default color scheme."""',
+        \ '    scheme = ColorScheme("Default")',
+        \ '    scheme.add_color("background", "#1A1A1A")',
+        \ '    scheme.add_color("foreground", "#FFFFFF")',
+        \ '    return scheme',
+        \ '',
+        \ 'if __name__ == "__main__":',
+        \ '    # Create and apply a custom theme',
+        \ '    theme = create_default_scheme()',
+        \ '    if theme.apply():',
+        \ '        print(f"Successfully applied theme: {theme.name}")',
+        \ ])
+
+
+    setlocal filetype=python
+    setlocal nomodifiable
+
+    " Return to original window
+    call win_gotoid(l:orig_win)
+endfunction
+
+function! themer#show_selector()
+    " Find colorschemes
+    let l:colorschemes = []
+    for l:dir in g:vim_themer_dirs
+        let l:expanded_dir = expand(l:dir)
+        if isdirectory(l:expanded_dir)
+            let l:files = globpath(l:expanded_dir, '**/*.vim', 0, 1)
+            for l:file in l:files
+                if join(readfile(l:file), "\n") =~ '\vhighlight|hi\s|link\s|set\s+background='
+                    call add(l:colorschemes, fnamemodify(l:file, ":t:r"))
+                endif
+            endfor
+        endif
+    endfor
+
+    if empty(l:colorschemes)
+        echohl ErrorMsg | echo "No colorschemes found" | echohl None
+        return
+    endif
+
+    " Create preview if enabled
+    if get(g:, 'vim_themer_preview', 0)
+        call themer#create_preview_window()
+    endif
+
+    " Set up FZF options
+    let l:opts = {
+        \ 'source': uniq(sort(l:colorschemes)),
+        \ 'sink*': function('s:handle_fzf_exit'),
+        \ 'options': [
+        \   '--bind', 'change:execute-silent(echo {} > /tmp/themer_current_theme && vim --cmd "call themer#update_preview(system(\"cat /tmp/themer_current_theme\"))")',
+        \   '--preview-window', 'hidden',
+        \   '--expect', 'ctrl-c,esc'
+        \ ],
+        \ 'window': {
+        \   'width': 0.4,
+        \   'height': 0.6,
+        \   'yoffset': 0.2,
+        \   'xoffset': 0.1,
+        \   'border': 'rounded'
+        \ }
+    \ }
+
+    " Run FZF
+    call fzf#run(fzf#wrap(l:opts))
+
+    " Set up cleanup
+    augroup ThemerPreview
+        autocmd!
+        autocmd User FzfStatusChange call themer#cleanup_preview()
+        autocmd VimLeavePre * call themer#cleanup_preview()
+    augroup END
+endfunction
+
+function! s:handle_fzf_exit(lines) abort
+    call themer#cleanup_preview()
+    
+    if len(a:lines) > 1 && empty(a:lines[0]) " Normal selection
+        call themer#set_theme(a:lines[1])
+    endif
+endfunction
+
+function! themer#cleanup_preview() abort
+    if exists('t:themer_preview_win')
+        " Only try to close if the window still exists
+        if win_id2win(win_getid(t:themer_preview_win))
+            execute 'bwipeout ' . t:themer_preview_buf
+        endif
+        
+        " Clean up variables
+        unlet! t:themer_preview_win
+        unlet! t:themer_preview_buf
+    endif
+endfunction
+
 function! themer#set_theme(name)
     try
         execute 'colorscheme ' . a:name
@@ -57,96 +213,82 @@ function! themer#set_theme(name)
     endtry
 endfunction
 
-" Apply a pywal-generated colorscheme silently without modifying external settings
 function! themer#apply_pywal()
-    let colors_json_path = expand('~/.cache/wal/colors.json')
-    if !filereadable(colors_json_path)
+    let l:colors_json_path = expand('~/.cache/wal/colors.json')
+    if !filereadable(l:colors_json_path)
         echohl ErrorMsg | echom "Pywal colors.json not found. Make sure you have run pywal at least once." | echohl None
         return
     endif
 
-    " Read the colors.json file using Vim's json_decode function
     try
-        let colors_dict = json_decode(join(readfile(colors_json_path), "\n"))
+        let l:colors_dict = json_decode(join(readfile(l:colors_json_path), "\n"))
     catch
         echohl ErrorMsg | echom "Error reading colors.json from pywal cache." | echohl None
         return
     endtry
 
-    " Apply the colors to Vim
-    call themer#apply_pywal_from_dict(colors_dict)
-
-    " Update the current theme variable to pywal
+    call themer#apply_pywal_from_dict(l:colors_dict)
     let g:current_color_scheme = "pywal"
 
-    " Final success message
     if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
         echom "Pywal colors applied from colors.json."
     endif
 endfunction
 
-" Apply pywal theme from a saved json dictionary
 function! themer#apply_pywal_from_dict(colors_dict)
-    " Clear all previous highlight groups to reset any previous theme
     execute 'highlight clear'
 
-    " Set general background and foreground
-    let bg = a:colors_dict.special.background
-    let fg = a:colors_dict.special.foreground
-    let cursor = a:colors_dict.special.cursor
+    let l:bg = a:colors_dict.special.background
+    let l:fg = a:colors_dict.special.foreground
+    let l:cursor = a:colors_dict.special.cursor
 
-    " Determine background setting
     if g:vim_themer_background ==# "auto"
-        let brightness = str2nr(matchstr(bg, '^#\(\x\{2\}\)'))  " Get the red component to determine brightness
-        let background_setting = (brightness < 128 ? "dark" : "light")
+        let l:brightness = str2nr(matchstr(l:bg, '^#\(\x\{2\}\)'))
+        let l:background_setting = (l:brightness < 128 ? "dark" : "light")
     else
-        let background_setting = g:vim_themer_background
+        let l:background_setting = g:vim_themer_background
     endif
 
     try
-        execute 'highlight Normal guibg=' . bg . ' guifg=' . fg
-        execute 'highlight Cursor guifg=' . bg . ' guibg=' . cursor
-        execute 'set background=' . background_setting
+        execute 'highlight Normal guibg=' . l:bg . ' guifg=' . l:fg
+        execute 'highlight Cursor guifg=' . l:bg . ' guibg=' . l:cursor
+        execute 'set background=' . l:background_setting
     catch
         echohl ErrorMsg | echom "Error applying background or foreground colors." | echohl None
     endtry
 
-    " Use base colors for other highlighting groups to create a complete theme
-    let colors = a:colors_dict.colors
+    let l:colors = a:colors_dict.colors
 
     try
-        " Apply colors across various highlight groups to fully utilize pywal colors
-        execute 'highlight Comment guifg=' . colors.color8 . ' gui=italic'
-        execute 'highlight Constant guifg=' . colors.color3
-        execute 'highlight Identifier guifg=' . colors.color4
-        execute 'highlight Statement guifg=' . colors.color1
-        execute 'highlight PreProc guifg=' . colors.color5
-        execute 'highlight Type guifg=' . colors.color6
-        execute 'highlight Special guifg=' . colors.color2
-        execute 'highlight Underlined guifg=' . colors.color12 . ' gui=underline'
-        execute 'highlight Todo guifg=' . colors.color1 . ' guibg=' . colors.color7 . ' gui=bold'
-        execute 'highlight Error guifg=' . colors.color0 . ' guibg=' . colors.color9 . ' gui=bold'
-        execute 'highlight LineNr guifg=' . colors.color8
-        execute 'highlight CursorLineNr guifg=' . colors.color12
-        execute 'highlight Visual guibg=' . colors.color10
-        execute 'highlight StatusLine guibg=' . colors.color0 . ' guifg=' . colors.color7
-        execute 'highlight StatusLineNC guibg=' . colors.color0 . ' guifg=' . colors.color8
-        execute 'highlight VertSplit guifg=' . colors.color8
+        execute 'highlight Comment guifg=' . l:colors.color8 . ' gui=italic'
+        execute 'highlight Constant guifg=' . l:colors.color3
+        execute 'highlight Identifier guifg=' . l:colors.color4
+        execute 'highlight Statement guifg=' . l:colors.color1
+        execute 'highlight PreProc guifg=' . l:colors.color5
+        execute 'highlight Type guifg=' . l:colors.color6
+        execute 'highlight Special guifg=' . l:colors.color2
+        execute 'highlight Underlined guifg=' . l:colors.color12 . ' gui=underline'
+        execute 'highlight Todo guifg=' . l:colors.color1 . ' guibg=' . l:colors.color7 . ' gui=bold'
+        execute 'highlight Error guifg=' . l:colors.color0 . ' guibg=' . l:colors.color9 . ' gui=bold'
+        execute 'highlight LineNr guifg=' . l:colors.color8
+        execute 'highlight CursorLineNr guifg=' . l:colors.color12
+        execute 'highlight Visual guibg=' . l:colors.color10
+        execute 'highlight StatusLine guibg=' . l:colors.color0 . ' guifg=' . l:colors.color7
+        execute 'highlight StatusLineNC guibg=' . l:colors.color0 . ' guifg=' . l:colors.color8
+        execute 'highlight VertSplit guifg=' . l:colors.color8
     catch
         echohl ErrorMsg | echom "Error applying highlight groups from pywal colors." | echohl None
     endtry
 endfunction
 
-" Save the current theme as default (either pywal or selected theme)
 function! themer#save_theme()
     if exists('g:current_color_scheme')
         if g:current_color_scheme ==# "pywal"
-            " Pywal mode in manual mode - Save a copy of the current pywal JSON file
-            let colors_json_path = expand('~/.cache/wal/colors.json')
-            if filereadable(colors_json_path)
+            let l:colors_json_path = expand('~/.cache/wal/colors.json')
+            if filereadable(l:colors_json_path)
                 try
                     call writefile([g:current_color_scheme], expand('~/.vim_themer_default'))
-                    call writefile(readfile(colors_json_path), expand('~/.vim_themer_saved_pywal.json'))
+                    call writefile(readfile(l:colors_json_path), expand('~/.vim_themer_saved_pywal.json'))
                     if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
                         echom "Pywal theme saved as default with colors from ~/.vim_themer_saved_pywal.json"
                     endif
@@ -157,7 +299,6 @@ function! themer#save_theme()
                 echohl ErrorMsg | echom "Pywal colors.json not found to save." | echohl None
             endif
         else
-            " Traditional colorscheme mode - Save the colorscheme name
             call writefile([g:current_color_scheme], expand('~/.vim_themer_default'))
             if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
                 echom "Traditional theme saved: " . g:current_color_scheme
@@ -168,19 +309,16 @@ function! themer#save_theme()
     endif
 endfunction
 
-" Apply saved theme on Vim startup
 function! themer#apply_saved_theme()
     if g:vim_themer_mode ==# "pywal"
-        " Always load the latest pywal colors
         call themer#apply_pywal()
     elseif filereadable(expand('~/.vim_themer_default'))
-        let saved_theme = trim(readfile(expand('~/.vim_themer_default'))[0])
-        if saved_theme ==# "pywal"
-            " Load from the saved pywal JSON file
+        let l:saved_theme = trim(readfile(expand('~/.vim_themer_default'))[0])
+        if l:saved_theme ==# "pywal"
             if filereadable(expand('~/.vim_themer_saved_pywal.json'))
                 try
-                    let colors_dict = json_decode(join(readfile(expand('~/.vim_themer_saved_pywal.json')), "\n"))
-                    call themer#apply_pywal_from_dict(colors_dict)
+                    let l:colors_dict = json_decode(join(readfile(expand('~/.vim_themer_saved_pywal.json')), "\n"))
+                    call themer#apply_pywal_from_dict(l:colors_dict)
                     if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
                         echom "Loaded saved pywal theme from ~/.vim_themer_saved_pywal.json"
                     endif
@@ -191,16 +329,15 @@ function! themer#apply_saved_theme()
                 echohl ErrorMsg | echom "Saved pywal theme file not found." | echohl None
             endif
         else
-            " Apply the traditional colorscheme by its name
             try
-                execute 'colorscheme ' . saved_theme
+                execute 'colorscheme ' . l:saved_theme
                 if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
-                    echom "Loaded saved traditional theme: " . saved_theme
+                    echom "Loaded saved traditional theme: " . l:saved_theme
                 endif
             catch /^Vim\%((\a\+)\)\=:E185/
-                echohl ErrorMsg | echom "Saved traditional colorscheme not found: " . saved_theme | echohl None
+                echohl ErrorMsg | echom "Saved traditional colorscheme not found: " . l:saved_theme | echohl None
             catch
-                echohl ErrorMsg | echom "Error applying saved traditional theme: " . saved_theme | echohl None
+                echohl ErrorMsg | echom "Error applying saved traditional theme: " . l:saved_theme | echohl None
             endtry
         endif
     else
@@ -209,14 +346,11 @@ function! themer#apply_saved_theme()
 endfunction
 
 function! themer#toggle_background()
-    " Check if the current theme is pywal
-    if g:current_color_scheme ==# 'pywal'
-        " Do nothing for pywal themes when toggling background
+    if exists('g:current_color_scheme') && g:current_color_scheme ==# 'pywal'
         if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
             echom "Pywal theme detected, background toggle has no effect."
         endif
     else
-        " For traditional themes, toggle the background between light and dark
         if &background == 'dark'
             set background=light
             if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0

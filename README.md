@@ -1,10 +1,11 @@
-#   themer.vim
+# themer.vim
 
 A Vim plugin for seamless colorscheme management with FZF integration and pywal support. themer.vim provides an intuitive interface for selecting, applying, and managing colorschemes, including support for pywal-generated themes.
 
 ## Features
 
-- 🎨 FZF-powered colorscheme selector
+- 🎨 FZF-powered colorscheme selector with real-time preview
+- 🔍 Split-window preview mode for visual theme browsing
 - 🔄 Pywal integration for system-wide color consistency
 - 💾 Theme persistence across sessions
 - ⚡ Quick theme switching with customizable keybindings
@@ -38,6 +39,7 @@ let g:vim_themer_dirs = ['~/.vim/pack/colors/start']  " Colorscheme directories
 let g:vim_themer_mode = "manual"                      " Options: 'manual', 'pywal'
 let g:vim_themer_background = "auto"                  " Options: 'light', 'dark', 'auto'
 let g:vim_themer_silent = 0                           " Options: 0 (verbose), 1 (silent)
+let g:vim_themer_preview = 0                          " Options: 0 (centered), 1 (preview)
 
 " Optional: Disable default keybindings
 let g:vim_themer_disable_keybindings = 0
@@ -47,7 +49,6 @@ let g:vim_themer_keymap_theme_select = '<leader>tt'   " Fuzzy find themes
 let g:vim_themer_keymap_pywal = '<leader>tp'         " Load pywal theme
 let g:vim_themer_keymap_save_theme = '<leader>ts'    " Save current theme
 let g:vim_themer_keymap_toggle_background = '<leader>tb' " Toggle light/dark background
-
 ```
 
 ## Commands
@@ -63,11 +64,21 @@ themer.vim provides the following commands:
 
 ## Usage
 
-### Basic Theme Selection
+### Theme Selection and Preview
 
-1. Press `<leader>tt` or run `:ThemeSelect` to open the FZF theme selector
-2. Search and select a theme using FZF's fuzzy finding
-3. The selected theme will be applied immediately
+themer.vim offers two modes for theme selection:
+
+#### Preview Mode (Split Window)
+1. Enable preview mode in your configuration: `let g:vim_themer_preview = 1`
+2. Press `<leader>tt` or run `:ThemeSelect` to open the split-window selector
+3. Navigate through themes to see real-time previews in your actual buffer
+4. Select a theme to apply it permanently, or exit to restore the original theme
+
+#### Standard Mode (Centered Window)
+1. Keep preview mode disabled: `let g:vim_themer_preview = 0`
+2. Press `<leader>tt` or run `:ThemeSelect` to open the centered selector
+3. Use FZF's fuzzy finding to search and select themes
+4. The selected theme will be applied upon confirmation
 
 ### Pywal Integration
 
@@ -77,11 +88,11 @@ themer.vim provides the following commands:
 
 ### Background Toggle
 
-1. Toggle light and dark background modes for traditional themes using <leader>tb or :ToggleBackground.
-2. For pywal themes, the toggle function does nothing, retaining the current pywal-applied theme.
+1. Toggle between light and dark background modes for traditional themes using `<leader>tb` or `:ToggleBackground`
+2. For pywal themes, the toggle function preserves the current pywal-applied theme
 
 ### Theme Persistence
-- Save a theme as default with <leader>ts or :SaveTheme
+- Save a theme as default with `<leader>ts` or `:SaveTheme`
 - For traditional themes, the saved theme will automatically load in future sessions
 - For pywal themes, a saved pywal configuration will load the saved colors, but live updates always use the current pywal state
 
@@ -97,6 +108,18 @@ let g:vim_themer_dirs = [
     \ '~/.vim/colors',
     \ '/usr/share/vim/vimfiles/colors'
 \]
+```
+
+### Preview Mode Configuration
+
+Control how themer.vim displays the theme selector:
+
+```vim
+" Enable split-window preview mode with real-time theme preview
+let g:vim_themer_preview = 1
+
+" Use centered window without preview
+let g:vim_themer_preview = 0
 ```
 
 ### Background Mode Control
@@ -137,6 +160,10 @@ let g:vim_themer_silent = 1
 3. **FZF Not Opening**
    - Confirm FZF is properly installed and updated
    - Check that the FZF Vim plugin is loaded before themer.vim
+
+4. **Preview Mode Issues**
+   - Ensure your Vim version is recent enough to support timer functionality
+   - Check that your terminal supports the required features for split windows
 
 ## Contributing
 

@@ -2,13 +2,26 @@
 
 function! themer#store_original_theme() abort
     let t:themer_original_theme = get(g:, 'colors_name', '')
+    let t:themer_was_pywal = exists('g:current_color_scheme') && g:current_color_scheme ==# 'pywal'
 endfunction
 
 function! themer#restore_original_theme() abort
-    if exists('t:themer_original_theme') && !empty(t:themer_original_theme)
-        call themer#set_theme(t:themer_original_theme)
-        unlet t:themer_original_theme
+    if exists('t:themer_was_pywal') && t:themer_was_pywal
+        " Restore pywal theme
+        if filereadable(expand('~/.cache/wal/colors.json'))
+            call themer#apply_pywal()
+        elseif filereadable(expand('~/.vim_themer_saved_pywal.json'))
+            let l:colors_dict = json_decode(join(readfile(expand('~/.vim_themer_saved_pywal.json')), "\n"))
+            call themer#apply_pywal_from_dict(l:colors_dict)
+        endif
+    elseif exists('t:themer_original_theme') && !empty(t:themer_original_theme)
+        " Restore traditional theme
+        execute 'colorscheme ' . t:themer_original_theme
     endif
+
+    " Clean up temporary variables
+    unlet! t:themer_original_theme
+    unlet! t:themer_was_pywal
 endfunction
 
 function! themer#update_preview(theme_name) abort
@@ -152,18 +165,37 @@ function! themer#show_selector()
         return
     endif
 
-    " Create preview if enabled
-    if get(g:, 'vim_themer_preview', 0)
+    " Determine if preview is enabled
+    let l:preview_enabled = get(g:, 'vim_themer_preview', 0)
+
+    " Only set up real-time preview if preview mode is enabled
+    let l:tmp = ''
+    if l:preview_enabled
+        " Create preview window
         call themer#create_preview_window()
+
+        " Create temporary file for communication
+        let l:tmp = tempname()
+
+        " Function to apply theme in real-time
+        function! s:apply_theme_realtime(timer) abort
+            if filereadable(g:themer_tmp_file)
+                let l:theme = readfile(g:themer_tmp_file)[0]
+                execute 'colorscheme ' . l:theme
+                call delete(g:themer_tmp_file)
+            endif
+        endfunction
+
+        " Set up global variables
+        let g:themer_tmp_file = l:tmp
+        let g:themer_timer = timer_start(50, function('s:apply_theme_realtime'), {'repeat': -1})
     endif
 
     " Set up FZF options
-    let l:preview_enabled = get(g:, 'vim_themer_preview', 0)
     let l:opts = {
         \ 'source': uniq(sort(l:colorschemes)),
         \ 'sink*': function('s:handle_fzf_exit'),
         \ 'options': [
-        \   '--bind', 'change:execute-silent(echo {} > /tmp/themer_current_theme && vim --cmd "call themer#set_theme(system(\"cat /tmp/themer_current_theme\"))")',
         \   '--preview-window', l:preview_enabled ? 'right:50%' : 'hidden',
         \   '--expect', 'ctrl-c,esc'
         \ ],
@@ -175,6 +207,11 @@ function! themer#show_selector()
         \   'border': l:preview_enabled ? 'none' : 'rounded'
         \ }
     \ }
+
+    " Add real-time preview binding only in preview mode
+    if l:preview_enabled
+        call extend(l:opts.options, ['--bind', printf('focus:execute-silent(echo {} > %s)', l:tmp)])
+    endif
 
     " Run FZF
     call fzf#run(fzf#wrap(l:opts))
@@ -188,16 +225,42 @@ function! themer#show_selector()
 endfunction
 
 function! s:handle_fzf_exit(lines) abort
+    " Clean up timer and temporary file
+    if exists('g:themer_timer')
+        call timer_stop(g:themer_timer)
+        unlet g:themer_timer
+    endif
+    if exists('g:themer_tmp_file')
+        call delete(g:themer_tmp_file)
+        unlet g:themer_tmp_file
+    endif
+
     call themer#cleanup_preview()
     
-    if len(a:lines) > 1 && empty(a:lines[0]) " Normal selection
+    " Check for a proper theme selection
+    " This happens when:
+    " 1. We have at least 2 lines in the output
+    " 2. The first line is empty (indicating normal selection, not ctrl-c/esc)
+    " 3. The second line contains the selected theme
+    if len(a:lines) > 1 && empty(a:lines[0]) && !empty(a:lines[1])
         call themer#set_theme(a:lines[1])
     else
+        " Restore the original theme for any other exit case
         call themer#restore_original_theme()
     endif
 endfunction
 
 function! s:cleanup_and_restore() abort
+    " Clean up timer and temporary file
+    if exists('g:themer_timer')
+        call timer_stop(g:themer_timer)
+        unlet g:themer_timer
+    endif
+    if exists('g:themer_tmp_file')
+        call delete(g:themer_tmp_file)
+        unlet g:themer_tmp_file
+    endif
+
     call themer#cleanup_preview()
     call themer#restore_original_theme()
 endfunction

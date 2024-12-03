@@ -1,5 +1,16 @@
 " autoload/themer.vim
 
+function! themer#store_original_theme() abort
+    let t:themer_original_theme = get(g:, 'colors_name', '')
+endfunction
+
+function! themer#restore_original_theme() abort
+    if exists('t:themer_original_theme') && !empty(t:themer_original_theme)
+        call themer#set_theme(t:themer_original_theme)
+        unlet t:themer_original_theme
+    endif
+endfunction
+
 function! themer#update_preview(theme_name) abort
     if !exists('t:themer_preview_win') || empty(a:theme_name)
         return
@@ -21,9 +32,8 @@ function! themer#update_preview(theme_name) abort
 endfunction
 
 function! themer#create_preview_window()
-    " Save original window and theme
+    " Save original window
     let l:orig_win = win_getid()
-    let t:themer_original_theme = get(g:, 'colors_name', '')
 
     " Create right split
     botright vnew
@@ -112,7 +122,6 @@ function! themer#create_preview_window()
         \ '        print(f"Successfully applied theme: {theme.name}")',
         \ ])
 
-
     setlocal filetype=python
     setlocal nomodifiable
 
@@ -121,6 +130,9 @@ function! themer#create_preview_window()
 endfunction
 
 function! themer#show_selector()
+    " Store original theme
+    call themer#store_original_theme()
+
     " Find colorschemes
     let l:colorschemes = []
     for l:dir in g:vim_themer_dirs
@@ -146,20 +158,21 @@ function! themer#show_selector()
     endif
 
     " Set up FZF options
+    let l:preview_enabled = get(g:, 'vim_themer_preview', 0)
     let l:opts = {
         \ 'source': uniq(sort(l:colorschemes)),
         \ 'sink*': function('s:handle_fzf_exit'),
         \ 'options': [
-        \   '--bind', 'change:execute-silent(echo {} > /tmp/themer_current_theme && vim --cmd "call themer#update_preview(system(\"cat /tmp/themer_current_theme\"))")',
-        \   '--preview-window', get(g:, 'vim_themer_preview', 0) ? 'right:50%' : 'hidden',
+        \   '--bind', 'change:execute-silent(echo {} > /tmp/themer_current_theme && vim --cmd "call themer#set_theme(system(\"cat /tmp/themer_current_theme\"))")',
+        \   '--preview-window', l:preview_enabled ? 'right:50%' : 'hidden',
         \   '--expect', 'ctrl-c,esc'
         \ ],
         \ 'window': {
-        \   'width': get(g:, 'vim_themer_preview', 0) ? 0.4 : 0.4,
-        \   'height': 0.6,
-        \   'yoffset': 0.2,
-        \   'xoffset': get(g:, 'vim_themer_preview', 0) ? 0.1 : 0.5,
-        \   'border': 'rounded'
+        \   'width': l:preview_enabled ? 0.5 : 0.4,
+        \   'height': l:preview_enabled ? 1.0 : 0.6,
+        \   'yoffset': l:preview_enabled ? 0 : 0.2,
+        \   'xoffset': l:preview_enabled ? 0 : 0.5,
+        \   'border': l:preview_enabled ? 'none' : 'rounded'
         \ }
     \ }
 
@@ -169,8 +182,8 @@ function! themer#show_selector()
     " Set up cleanup
     augroup ThemerPreview
         autocmd!
-        autocmd User FzfStatusChange call themer#cleanup_preview()
-        autocmd VimLeavePre * call themer#cleanup_preview()
+        autocmd User FzfStatusChange call s:cleanup_and_restore()
+        autocmd VimLeavePre * call s:cleanup_and_restore()
     augroup END
 endfunction
 
@@ -179,7 +192,14 @@ function! s:handle_fzf_exit(lines) abort
     
     if len(a:lines) > 1 && empty(a:lines[0]) " Normal selection
         call themer#set_theme(a:lines[1])
+    else
+        call themer#restore_original_theme()
     endif
+endfunction
+
+function! s:cleanup_and_restore() abort
+    call themer#cleanup_preview()
+    call themer#restore_original_theme()
 endfunction
 
 function! themer#cleanup_preview() abort
@@ -194,8 +214,6 @@ function! themer#cleanup_preview() abort
         unlet! t:themer_preview_buf
     endif
 endfunction
-
-" Rest of the functions (themer#set_theme, themer#apply_pywal, etc.) are unchanged.
 
 function! themer#set_theme(name)
     try
@@ -316,7 +334,7 @@ function! themer#apply_saved_theme()
             if filereadable(expand('~/.vim_themer_saved_pywal.json'))
                 try
                     let l:colors_dict = json_decode(join(readfile(expand('~/.vim_themer_saved_pywal.json')), "\n"))
-                    call themer#apply_pywal_from_dict(l:colors_dict)
+		    call themer#apply_pywal_from_dict(l:colors_dict)
                     if !exists('g:vim_themer_silent') || g:vim_themer_silent == 0
                         echom "Loaded saved pywal theme from ~/.vim_themer_saved_pywal.json"
                     endif

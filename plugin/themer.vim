@@ -1,37 +1,37 @@
 " themer: Plugin initialization and commands
 
-" Default directories for colorschemes (existing code)
+" Default directories for colorschemes
 if !exists('g:vim_themer_dirs')
     let g:vim_themer_dirs = ['~/.vim/pack/colors/start']
 endif
 
-" Set the default mode if not defined by the user (existing code)
+" Set the default mode if not defined by the user
 if !exists('g:vim_themer_mode')
     let g:vim_themer_mode = "manual"  " Options: 'pywal', 'manual'
 endif
 
-" Set the default background behavior if not defined by the user (existing code)
+" Set the default background behavior if not defined by the user
 if !exists('g:vim_themer_background')
     let g:vim_themer_background = "auto"  " Options: 'light', 'dark', 'auto'
 endif
 
-" Set the default silent mode behavior if not defined by the user (existing code)
+" Set the default silent mode behavior if not defined by the user
 if !exists('g:vim_themer_silent')
     let g:vim_themer_silent = 0  " Options: 0 (false), 1 (true)
 endif
 
-" Load saved default theme based on mode (existing code)
+" Load saved default theme based on mode
 if filereadable(expand('~/.vim_themer_default'))
     call themer#apply_saved_theme()
 endif
 
-" Command: ThemeSelect - Open the FZF selector (existing code)
+" Command: ThemeSelect - Open the FZF selector
 command! ThemeSelect call themer#show_selector()
 
-" Command: PywalTheme - Apply pywal-generated colorscheme (existing code)
+" Command: PywalTheme - Apply pywal-generated colorscheme
 command! PywalTheme call themer#apply_pywal()
 
-" Command: SaveTheme - Save the current colorscheme as default (existing code)
+" Command: SaveTheme - Save the current colorscheme as default
 command! SaveTheme call themer#save_theme()
 
 " Command: ToggleBackground - Toggle between light and dark background

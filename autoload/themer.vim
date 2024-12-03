@@ -65,6 +65,7 @@ function! themer#create_preview_window()
     " Extended sample code
     call setline(1, [
         \ '#!/usr/bin/env python',
+        \ '        """Themer Color Preview."""',
         \ '',
         \ 'from typing import Dict, List, Optional, Union',
         \ 'from dataclasses import dataclass',
@@ -219,8 +220,8 @@ function! themer#show_selector()
     " Set up cleanup
     augroup ThemerPreview
         autocmd!
-        autocmd User FzfStatusChange call s:cleanup_and_restore()
-        autocmd VimLeavePre * call s:cleanup_and_restore()
+        autocmd User FzfStatusChange call s:handle_fzf_exit([])
+        autocmd VimLeavePre * call s:handle_fzf_exit([])
     augroup END
 endfunction
 
@@ -237,32 +238,12 @@ function! s:handle_fzf_exit(lines) abort
 
     call themer#cleanup_preview()
     
-    " Check for a proper theme selection
-    " This happens when:
-    " 1. We have at least 2 lines in the output
-    " 2. The first line is empty (indicating normal selection, not ctrl-c/esc)
-    " 3. The second line contains the selected theme
     if len(a:lines) > 1 && empty(a:lines[0]) && !empty(a:lines[1])
         call themer#set_theme(a:lines[1])
     else
         " Restore the original theme for any other exit case
         call themer#restore_original_theme()
     endif
-endfunction
-
-function! s:cleanup_and_restore() abort
-    " Clean up timer and temporary file
-    if exists('g:themer_timer')
-        call timer_stop(g:themer_timer)
-        unlet g:themer_timer
-    endif
-    if exists('g:themer_tmp_file')
-        call delete(g:themer_tmp_file)
-        unlet g:themer_tmp_file
-    endif
-
-    call themer#cleanup_preview()
-    call themer#restore_original_theme()
 endfunction
 
 function! themer#cleanup_preview() abort

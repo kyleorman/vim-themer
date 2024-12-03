@@ -7,7 +7,6 @@ function! themer#update_preview(theme_name) abort
 
     " Store current state
     let l:cur_win = winnr()
-    let l:cur_theme = get(g:, 'colors_name', '')
 
     " Switch to preview window and apply theme
     noautocmd execute t:themer_preview_win . 'wincmd w'
@@ -16,11 +15,8 @@ function! themer#update_preview(theme_name) abort
         redraw!
     catch
     finally
-        " Return to original window and restore theme
+        " Return to original window
         noautocmd execute l:cur_win . 'wincmd w'
-        if !empty(l:cur_theme)
-            execute 'colorscheme ' . l:cur_theme
-        endif
     endtry
 endfunction
 
@@ -155,14 +151,14 @@ function! themer#show_selector()
         \ 'sink*': function('s:handle_fzf_exit'),
         \ 'options': [
         \   '--bind', 'change:execute-silent(echo {} > /tmp/themer_current_theme && vim --cmd "call themer#update_preview(system(\"cat /tmp/themer_current_theme\"))")',
-        \   '--preview-window', 'hidden',
+        \   '--preview-window', get(g:, 'vim_themer_preview', 0) ? 'right:50%' : 'hidden',
         \   '--expect', 'ctrl-c,esc'
         \ ],
         \ 'window': {
-        \   'width': 0.4,
+        \   'width': get(g:, 'vim_themer_preview', 0) ? 0.4 : 0.4,
         \   'height': 0.6,
         \   'yoffset': 0.2,
-        \   'xoffset': 0.1,
+        \   'xoffset': get(g:, 'vim_themer_preview', 0) ? 0.1 : 0.5,
         \   'border': 'rounded'
         \ }
     \ }
@@ -198,6 +194,8 @@ function! themer#cleanup_preview() abort
         unlet! t:themer_preview_buf
     endif
 endfunction
+
+" Rest of the functions (themer#set_theme, themer#apply_pywal, etc.) are unchanged.
 
 function! themer#set_theme(name)
     try

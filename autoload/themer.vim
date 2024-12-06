@@ -415,6 +415,12 @@ function! themer#check_pywal_update(timer_id) abort
         let s:pywal_colors_mtime = l:mtime
         " Re-apply the Pywal theme
         call themer#apply_pywal()
+
+        " Notify other plugins about the pywal update
+        if exists('#User#ThemerPywalUpdate')
+            doautocmd User ThemerPywalUpdate
+        endif
+
         if !get(g:, 'vim_themer_silent', 0)
             echom "Pywal theme updated."
         endif
@@ -422,6 +428,7 @@ function! themer#check_pywal_update(timer_id) abort
 endfunction
 
 function! themer#apply_pywal_from_dict(colors_dict)
+    " Apply the base vim theme first
     execute 'highlight clear'
 
     let l:bg = a:colors_dict['special']['background']
@@ -439,6 +446,14 @@ function! themer#apply_pywal_from_dict(colors_dict)
         execute 'highlight Normal guibg=' . l:bg . ' guifg=' . l:fg
         execute 'highlight Cursor guifg=' . l:bg . ' guibg=' . l:cursor
         execute 'set background=' . l:background_setting
+
+        " Store colors for other plugins to access
+        let g:themer_current_colors = a:colors_dict
+
+        " Notify other plugins about the new colors
+        if exists('#User#ThemerColorsChanged')
+            doautocmd User ThemerColorsChanged
+        endif
     catch
         echohl ErrorMsg | echom "Theme error: Failed to set colors" | echohl None
     endtry
